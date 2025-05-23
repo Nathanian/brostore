@@ -47,7 +47,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.AppViewHolder> {
             name = itemView.findViewById(R.id.textViewName);
             version = itemView.findViewById(R.id.textViewVersion);
             updateBtn = itemView.findViewById(R.id.buttonUpdate);
-            rollbackBtn = itemView.findViewById(R.id.buttonRollback); // ➕ NEU
+            rollbackBtn = itemView.findViewById(R.id.buttonRollback);
         }
     }
 
@@ -66,7 +66,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.AppViewHolder> {
         holder.name.setText(app.name);
         holder.version.setText("Version: " + app.version);
 
-        // 🔁 Backup-Datei prüfen
+        // 🔁 Rollback prüfen
         File backupFile = new File(context.getExternalFilesDir("backups"),
                 app.packageName + "/" + app.version + ".apk");
 
@@ -136,83 +136,21 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.AppViewHolder> {
         }
     }
 
-
-    private String getVersionFromApk(Context context, File apkFile) {
-        try {
-            PackageManager pm = context.getPackageManager();
-            PackageInfo info = pm.getPackageArchiveInfo(apkFile.getAbsolutePath(), 0);
-            if (info != null) {
-                return info.versionName;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-
     @Override
     public int getItemCount() {
         return appList.size();
     }
 
-    // 🔐 Methode zum Backup der alten APK
-    public void backupApk(Context context, String packageName, String version) {
+    // ✅ Version aus einer APK-Datei lesen
+    private String getVersionFromApk(Context context, File apkFile) {
         try {
             PackageManager pm = context.getPackageManager();
-            ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
-            File sourceApk = new File(appInfo.sourceDir);
-
-            File backupDir = new File(Environment.getExternalStorageDirectory(),
-                    "BroStore/backups/" + packageName);
-            if (!backupDir.exists()) backupDir.mkdirs();
-
-            File backupFile = new File(backupDir, version + ".apk");
-
-            try (InputStream in = new FileInputStream(sourceApk);
-                 OutputStream out = new FileOutputStream(backupFile)) {
-
-                byte[] buf = new byte[4096];
-                int len;
-                while ((len = in.read(buf)) > 0) {
-                    out.write(buf, 0, len);
-                }
-            }
-
+            PackageInfo info = pm.getPackageArchiveInfo(apkFile.getAbsolutePath(), 0);
+            if (info != null) return info.versionName;
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return null;
     }
-
-    public void startApkDownload(Context context, String apkUrl) {
-        try {
-            Uri uri = Uri.parse(apkUrl);
-            String fileName = uri.getLastPathSegment(); // z. B. brofinder-1.1.apk
-
-            File dir = new File(Environment.getExternalStorageDirectory(),
-                    "BroStore/apks/" + apkUrl.split("/")[apkUrl.split("/").length - 1].replace(".apk", ""));
-
-            if (!dir.exists()) dir.mkdirs();
-
-            File file = new File(dir, fileName);
-
-            DownloadManager.Request request = new DownloadManager.Request(uri);
-            request.setTitle("BroStore Update");
-            request.setDescription("Lade Update herunter...");
-            request.setDestinationUri(Uri.fromFile(file));
-            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            request.setAllowedOverMetered(true);
-            request.setAllowedOverRoaming(true);
-
-            DownloadManager dm = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
-            dm.enqueue(request);
-
-            Toast.makeText(context, "Download gestartet...", Toast.LENGTH_SHORT).show();
-
-        } catch (Exception e) {
-            Toast.makeText(context, "Download fehlgeschlagen: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            e.printStackTrace();
-        }
-    }
-
 }
+
