@@ -1,0 +1,6 @@
+{
+  "version": "1.0",
+  "apk_url": "https://nathanian.github.io/brostore/apks/brostore-1.0.apk",
+  "changelog": "• Neue Zielauswahl\n• Fehlerbehebungen\n• Update-Mechanismus vorbereitet",
+  "forceUpdate": false
+}

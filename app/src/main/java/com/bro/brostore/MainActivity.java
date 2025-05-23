@@ -44,41 +44,58 @@ public class MainActivity extends AppCompatActivity {
 
         for (PackageInfo pkg : packages) {
             String pkgName = pkg.packageName;
+
             if (pkgName.startsWith("com.bro")) {
                 String version = pkg.versionName;
                 Drawable icon = pkg.applicationInfo.loadIcon(pm);
                 String label = pkg.applicationInfo.loadLabel(pm).toString();
 
+                // Neues AppModel-Objekt erstellen
                 AppModel app = new AppModel(icon, label, pkgName, version);
 
-                // ✅ JSON vom Server laden
-                UpdateInfo info = fetchUpdateInfo(pkgName);
-                if (info != null && !info.version.equals(version)) {
-                    Log.d("BroStore", "Update verfügbar für " + label);
-                    app.updateInfo = info;
-                }
-
+                // Zuerst ohne UpdateInfo zur Liste hinzufügen
                 appList.add(app);
+
+                // Dann im Hintergrund die Update-Info laden
+                new Thread(() -> {
+                    UpdateInfo info = fetchUpdateInfo(pkgName);
+                    if (info != null && !info.version.equals(version)) {
+                        app.updateInfo = info;
+                        Log.d("BroStore", "UPDATE für " + label + ": " + version + " → " + info.version);
+
+                        // UI aktualisieren
+                        runOnUiThread(() -> adapter.notifyDataSetChanged());
+                    }
+                }).start();
             }
         }
     }
 
 
+
     public UpdateInfo fetchUpdateInfo(String pkgName) {
         try {
-            URL url = new URL("https://deinserver.com/updates/" + pkgName + ".json");
+            // Beispiel: https://nathanian.github.io/brostore/updates/com.bro.brofinder.json
+            String baseUrl = "https://nathanian.github.io/brostore/updates/";
+            URL url = new URL(baseUrl + pkgName + ".json");
+
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setConnectTimeout(3000);
             conn.setReadTimeout(3000);
+            conn.setRequestMethod("GET");
 
-            InputStream input = conn.getInputStream();
-            InputStreamReader reader = new InputStreamReader(input);
-            return new Gson().fromJson(reader, UpdateInfo.class);
-
+            if (conn.getResponseCode() == 200) {
+                InputStream input = conn.getInputStream();
+                InputStreamReader reader = new InputStreamReader(input);
+                return new Gson().fromJson(reader, UpdateInfo.class);
+            } else {
+                System.err.println("Update JSON not found for: " + pkgName);
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
         }
+
+        return null;
     }
 
 }
