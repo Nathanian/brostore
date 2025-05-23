@@ -1,9 +1,12 @@
 package com.bro.brostore;
 
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -12,8 +15,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.Gson;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -97,5 +104,37 @@ public class MainActivity extends AppCompatActivity {
 
         return null;
     }
+
+
+    public void backupApk(Context context, String packageName, String version) {
+        try {
+            PackageManager pm = context.getPackageManager();
+            ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
+            File sourceApk = new File(appInfo.sourceDir);
+
+            File backupDir = new File(Environment.getExternalStorageDirectory(),
+                    "BroStore/backups/" + packageName);
+            if (!backupDir.exists()) backupDir.mkdirs();
+
+            File backupFile = new File(backupDir, version + ".apk");
+
+            try (InputStream in = new FileInputStream(sourceApk);
+                 OutputStream out = new FileOutputStream(backupFile)) {
+
+                byte[] buf = new byte[4096];
+                int len;
+                while ((len = in.read(buf)) > 0) {
+                    out.write(buf, 0, len);
+                }
+            }
+
+            Log.d("BroStore", "APK gesichert unter: " + backupFile.getAbsolutePath());
+
+        } catch (Exception e) {
+            Log.e("BroStore", "Backup fehlgeschlagen: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 
 }
