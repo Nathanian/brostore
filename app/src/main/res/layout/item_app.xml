@@ -36,5 +36,13 @@
             android:layout_height="wrap_content"
             android:text="Update verfügbar"
             android:visibility="gone" />
+
+        <Button
+            android:id="@+id/buttonRollback"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Backup installieren"
+            android:visibility="gone" />
+
     </LinearLayout>
 </LinearLayout>
